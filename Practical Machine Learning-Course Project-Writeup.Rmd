@@ -1,0 +1,75 @@
+---
+title: "Practical Machine Learning-Course Project-Writeup"
+author: "HE Ying"
+output: html_document
+---
+--Background and Introduction
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement ¨C a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+--Data
+Data 
+
+
+The training data for this project are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+--Getting and cleaning data
+
+
+
+
+```{r}
+setwd("C://Documents/Data Science/Machine Learning")
+pmltrain=read.csv("pml-training.csv",header=T,na.strings=c("NA","#DIV/0!",""))
+pmltest=read.csv("pml-testing.csv",header=T,na.strings=c("NA","#DIV/0!",""))
+set.seed(1234)
+library(caret)
+```
+
+Frist check the data and eliminate any column with NA's 
+```{r}
+
+pmltrain=pmltrain[,apply(pmltrain,2,function(x)!any(is.na(x)))]
+pmltest=pmltest[,apply(pmltest,2,function(x)!any(is.na(x)))]
+
+```
+
+Before we can move forward with data analysis, we split the training set into two for cross validation purposes.  Using Random Forest algorithm allows me to pick up more important variables. 
+```{r}
+inTrain <- createDataPartition(y=pmltrain$classe, p=0.50, list=FALSE)
+train1  <- pmltrain[inTrain,]
+train2  <- pmltrain[-inTrain,]
+library(randomForest)
+fit <- randomForest(classe~., data=train1, importance=TRUE, ntree=100)
+varImpPlot(fit)
+```
+Using the Accuracy and Gini graphs above, we select the top 9 variables that we¡¯ll use for model building. 
+
+--Model
+We decide to employ Random Forest algorithm using 9 variable as model parameters.
+```{r,cache=TRUE}
+modfit=train(classe~roll_belt+num_window+pitch_belt+magnet_dumbbell_y+magnet_dumbbell_z+pitch_forearm+accel_dumbbell_y+roll_arm+roll_forearm,data=train1,method="rf",prox=TRUE,verbose=TRUE,allowParallel=TRUE)
+```
+The accuracy of the model.
+```{r,cache=TRUE}
+pred=predict(modfit,train2)
+cm=confusionMatrix(pred,train2$classe)
+cm
+```
+
+``
+--Conclusion
+In this assignment, we predicted the classification of 20 observations using a Random Forest algorithm trained on a subset of data
+obtaining an accuracy of 99.7%.
+
+
+
+
+
